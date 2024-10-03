@@ -47,13 +47,19 @@ function App() {
     );
     const data = nuevosPaquetes.map((item) => {
       const [nombre, version] = item.split("?");
+      const indexVerion = arrayPaquetes.findIndex(
+        (paquete) => paquete.split("?")[0] === nombre
+      );
+
       return [
         recurso,
         nombre,
         version,
         `https://www.npmjs.com/package/${nombre}/v/${version}`,
-        arrayPaquetes.find((paquete) => paquete.includes(nombre))
-          ? "Version"
+        indexVerion !== -1
+          ? arrayPaquetes[indexVerion].split("?")[1] < version
+            ? "Version Superior"
+            : "Version Inferior"
           : "Nuevo",
         "",
       ];
@@ -72,7 +78,6 @@ function App() {
     ];
 
     const workbook = new ExcelJS.Workbook();
-    console.log(workbook);
 
     const worksheet = workbook.addWorksheet("Paquetes");
 
@@ -86,13 +91,19 @@ function App() {
         estadoCell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FFFF0000" },
+          fgColor: { argb: "FF008000" },
         };
-      } else if (estadoCell.value === "Version") {
+      } else if (estadoCell.value === "Version Superior") {
         estadoCell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FFFFFF00" },
+          fgColor: { argb: "FF0000FF" },
+        };
+      } else if (estadoCell.value === "Version Inferior") {
+        estadoCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF0000" },
         };
       }
     });
