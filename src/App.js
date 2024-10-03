@@ -110,7 +110,7 @@ function App() {
 
     workbook.xlsx.writeBuffer().then((buffer) => {
       const blob = new Blob([buffer], { type: "application/octet-stream" });
-      saveAs(blob, "paquetes.xlsx");
+      saveAs(blob, `${recurso}.xlsx`);
     });
   };
 
