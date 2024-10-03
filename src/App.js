@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./App.css";
-import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import ExcelJS from "exceljs";
 
 function App() {
   const [approvedPackages, setApprovedPackages] = useState("");
@@ -71,24 +71,41 @@ function App() {
       "SUSTENTO",
     ];
 
-    const worksheetData = [headers, ...data];
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Paquetes");
+    const workbook = new ExcelJS.Workbook();
+    console.log(workbook);
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
+    const worksheet = workbook.addWorksheet("Paquetes");
+
+    worksheet.addRow(headers);
+
+    data.forEach((row) => {
+      const newRow = worksheet.addRow(row);
+
+      const estadoCell = newRow.getCell(5);
+      if (estadoCell.value === "Nuevo") {
+        estadoCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFFF0000" },
+        };
+      } else if (estadoCell.value === "Version") {
+        estadoCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFFFFF00" },
+        };
+      }
     });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(blob, "paquetes.xlsx");
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: "application/octet-stream" });
+      saveAs(blob, "paquetes.xlsx");
+    });
   };
 
   return (
     <div className="App min-h-screen bg-gray-300">
-      <h1 className="text-3xl font-bold text-center p-4">
-        Nuevos Paquetes
-      </h1>
+      <h1 className="text-3xl font-bold text-center p-4">Nuevos Paquetes</h1>
       <form
         onSubmit={handleSubmit}
         className="p-6 max-w-md mx-auto bg-white shadow-md rounded-md"
