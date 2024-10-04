@@ -50,64 +50,84 @@ function App() {
       const indexVerion = arrayPaquetes.findIndex(
         (paquete) => paquete.split("?")[0] === nombre
       );
-
       return [
+        "",
         recurso,
         nombre,
         version,
         `https://www.npmjs.com/package/${nombre}/v/${version}`,
+        "",
         indexVerion !== -1
           ? arrayPaquetes[indexVerion].split("?")[1] < version
             ? "Version Superior"
             : "Version Inferior"
           : "Nuevo",
-        "",
       ];
     });
-    handleDownloadExcel(data);
+    const sortData = data.sort((a, b) => {
+      if (a[6] === b[6]) {
+        return a[2] > b[2] ? 1 : -1;
+      }
+      return a[6] > b[6] ? 1 : -1;
+    });
+    handleDownloadExcel(sortData.map((item,index) => {
+      item[0] = index + 1;
+      return item;
+    }));
   };
 
-  const handleDownloadExcel = (data) => {
-    const headers = [
-      "RECURSO",
-      "NOMBRE PAQUETE",
-      "VERSIÒN",
-      "URL",
-      "ESTADO",
-      "SUSTENTO",
-    ];
-
+  const handleDownloadExcel = async (data) => {
+   
     const workbook = new ExcelJS.Workbook();
+    
+    const response = await fetch("/plantilla.txt");
+    const base64Template = await response.text(); 
+    const binaryString = atob(base64Template); 
+    const arrayBuffer = new ArrayBuffer(binaryString.length);
+    const uintArray = new Uint8Array(arrayBuffer);
+  
+    for (let i = 0; i < binaryString.length; i++) {
+      uintArray[i] = binaryString.charCodeAt(i);
+    }
+  
+    
+    await workbook.xlsx.load(arrayBuffer);
 
-    const worksheet = workbook.addWorksheet("Paquetes");
-
-    worksheet.addRow(headers);
+    const worksheet = workbook.getWorksheet("Hoja1"); 
+    worksheet.name = recurso; 
+    
+    let rowIndex = 3;
 
     data.forEach((row) => {
-      const newRow = worksheet.addRow(row);
+      const newRow = worksheet.getRow(rowIndex); 
+      newRow.values = row; 
 
-      const estadoCell = newRow.getCell(5);
+      const estadoCell = newRow.getCell(7); 
       if (estadoCell.value === "Nuevo") {
         estadoCell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF008000" },
+          fgColor: { argb: "FF008000" }, 
         };
       } else if (estadoCell.value === "Version Superior") {
         estadoCell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF0000FF" },
+          fgColor: { argb: "FF0000FF" }, 
         };
       } else if (estadoCell.value === "Version Inferior") {
         estadoCell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF0000" },
+          fgColor: { argb: "FF0000" }, 
         };
       }
+
+      
+      rowIndex++;
     });
 
+    
     workbook.xlsx.writeBuffer().then((buffer) => {
       const blob = new Blob([buffer], { type: "application/octet-stream" });
       saveAs(blob, `${recurso}.xlsx`);
